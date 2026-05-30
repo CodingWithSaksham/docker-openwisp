@@ -6,7 +6,7 @@ from urllib import error as urlerror
 from urllib import request
 
 import requests
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -259,13 +259,20 @@ class TestServices(TestUtilities, unittest.TestCase):
 
     @classmethod
     def _delete_object(cls, resource_link):
-        """Takes URL for location to delete."""
-        cls.base_driver.get(resource_link)
-        element = cls.base_driver.find_element(By.CLASS_NAME, "deletelink-box")
-        js = "arguments[0].setAttribute('style', 'display:block')"
-        cls.base_driver.execute_script(js, element)
-        element.find_element(By.CLASS_NAME, "deletelink").click()
-        cls.base_driver.find_element(By.XPATH, '//input[@type="submit"]').click()
+        """Navigate directly to the admin delete view and confirm deletion.
+
+        Using the delete URL directly (rather than clicking through the change
+        form's deletelink-box) is more reliable: the delete button on the change
+        page is absent when the object no longer exists, causing NoSuchElement
+        errors on retries. If the object is already gone the delete view returns
+        a "doesn't exist" page with no submit button — we treat that as success.
+        """
+        delete_link = resource_link.replace("/change/", "/delete/")
+        cls.base_driver.get(delete_link)
+        try:
+            cls.base_driver.find_element(By.XPATH, '//input[@type="submit"]').click()
+        except NoSuchElementException:
+            pass  # object already deleted — nothing to do
 
     def test_admin_login(self):
         self.login()
