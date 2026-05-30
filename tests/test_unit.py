@@ -1,18 +1,5 @@
-"""
-Regression tests for issue #621 — run without a live stack.
-
-Verifies:
-  1. _cleanup_stale_test_data calls the ORM delete with all three known usernames.
-  2. A cleanup failure prints a warning instead of aborting setUpClass.
-  3. tearDownClass quits both drivers even when _delete_object raises any exception.
-  4. tearDownClass raises RuntimeError when _delete_object fails, so CI exits non-zero.
-"""
-import os
-import sys
 import unittest
 from unittest.mock import MagicMock, patch
-
-sys.path.insert(0, os.path.dirname(__file__))
 
 
 class TestCleanupStaleData(unittest.TestCase):
@@ -80,7 +67,7 @@ class TestTeardownResilience(unittest.TestCase):
 
 class TestTeardownSurfacesErrors(unittest.TestCase):
     def test_teardown_raises_when_delete_object_fails(self):
-        """tearDownClass must raise so unittest records a failure and CI exits non-zero."""
+        """tearDownClass must raise so CI exits non-zero on _delete_object failure."""
         from runtests import TestServices
 
         mock_driver = MagicMock()
