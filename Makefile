@@ -67,7 +67,7 @@ develop-runtests:
 	make develop-pythontests
 
 develop-pythontests:
-	python3 tests/runtests.py
+	cd tests && python3 -m unittest test_unit runtests
 
 # Development
 develop: compose-build

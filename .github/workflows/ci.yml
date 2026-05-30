@@ -87,9 +87,15 @@ jobs:
           # /opt/openwisp/docker-openwisp. To ensure the test runs correctly
           # and environment variables remain intact, it is essential to
           # execute the test from this directory.
-          command: cd /opt/openwisp/docker-openwisp && make develop-pythontests && make stop
+          # docker compose down -v ensures each retry starts with a clean
+          # database and fresh containers, eliminating stale-state failures.
+          command: cd /opt/openwisp/docker-openwisp && docker compose down -v; make develop-runtests
         env:
           SELENIUM_HEADLESS: 1
+
+      - name: Teardown stack
+        if: ${{ always() }}
+        run: cd /opt/openwisp/docker-openwisp && docker compose down -v
 
       - name: Print docker logs
         if: ${{ failure() }}

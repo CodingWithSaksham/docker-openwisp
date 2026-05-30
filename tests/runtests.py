@@ -6,7 +6,7 @@ from urllib import error as urlerror
 from urllib import request
 
 import requests
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -183,11 +183,14 @@ class TestServices(TestUtilities, unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        teardown_errors = []
         for resource_link in cls.objects_to_delete:
             try:
                 cls._delete_object(resource_link)
-            except NoSuchElementException:
-                print(f"Unable to delete resource at: {resource_link}")
+            except Exception as e:
+                exc_type = type(e).__name__
+                print(f"Unable to delete resource at {resource_link}: {exc_type}: {e}")
+                teardown_errors.append((resource_link, e))
         cls.second_driver.quit()
         cls.base_driver.quit()
         # Remove the temporary custom CSS file created for testing
@@ -209,6 +212,12 @@ class TestServices(TestUtilities, unittest.TestCase):
             )
             output, _ = map(str, cmd.communicate())
             print(f"One of the containers are down!\nOutput:\n{output}")
+        if teardown_errors:
+            failed_links = ", ".join(link for link, _ in teardown_errors)
+            raise RuntimeError(
+                f"tearDownClass failed to delete {len(teardown_errors)} "
+                f"resource(s): {failed_links}"
+            )
 
     @classmethod
     def _delete_object(cls, resource_link):
